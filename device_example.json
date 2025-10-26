@@ -1,0 +1,24 @@
+{
+    "devices": [
+        {
+            "device_type": "cisco_ios",
+            "host": "192.168.1.1",
+            "username": "admin",
+            "password": "cisco123",
+            "backup_password": "cisco456"
+        },
+        {
+            "device_type": "huawei",
+            "host": "192.168.2.1",
+            "username": "admin",
+            "password": "huawei123"
+        },
+        {
+            "device_type": "juniper",
+            "host": "192.168.3.1",
+            "username": "admin",
+            "password": "juniper123",
+            "port": 22
+        }
+    ]
+}

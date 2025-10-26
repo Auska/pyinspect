@@ -1,0 +1,29 @@
+{
+    "devices": [
+        {
+            "device_type": "cisco_ios",
+            "host": "192.168.1.1",
+            "username": "admin",
+            "password": "cisco123",
+            "backup_password": "cisco456"
+        },
+        {
+            "device_type": "juniper",
+            "host": "192.168.2.1",
+            "username": "admin",
+            "password": "juniper123",
+            "port": 22
+        }
+    ],
+    "commands": {
+        "cisco_ios": [
+            "show version",
+            "show ip interface brief",
+            "show vlan brief"
+        ],
+        "juniper": [
+            "show version",
+            "show interfaces terse"
+        ]
+    }
+}

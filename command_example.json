@@ -1,0 +1,36 @@
+{
+    "commands": {
+        "cisco_ios": [
+            "show version",
+            "show ip interface brief",
+            "show vlan brief",
+            "show spanning-tree summary"
+        ],
+        "cisco_xe": [
+            "show version",
+            "show ip interface brief",
+            "show vlan brief",
+            "show spanning-tree summary"
+        ],
+        "cisco_nxos": [
+            "show version",
+            "show interface brief",
+            "show vlan brief"
+        ],
+        "huawei": [
+            "display version",
+            "display ip interface brief",
+            "display vlan"
+        ],
+        "h3c": [
+            "display version",
+            "display ip interface brief",
+            "display vlan"
+        ],
+        "juniper": [
+            "show version",
+            "show interfaces terse",
+            "show vlans"
+        ]
+    }
+}
