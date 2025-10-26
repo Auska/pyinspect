@@ -86,6 +86,7 @@ class NetworkInspector:
         """
         result = {
             'hostname': device.get('host'),
+            'ip_address': device.get('host'),  # 添加IP地址
             'device_type': device.get('device_type'),
             'status': 'failed',
             'output': '',
@@ -297,6 +298,9 @@ class NetworkInspector:
             
             for result in results:
                 f.write(f"设备: {result['hostname']} ({result['device_type']})\n")
+                # 输出IP地址
+                if result.get('ip_address'):
+                    f.write(f"IP地址: {result['ip_address']}\n")
                 f.write(f"状态: {result['status']}\n")
                 # 输出使用的密码信息
                 if result['password_used']:
@@ -321,6 +325,8 @@ def main():
                         help='巡检命令配置文件路径')
     parser.add_argument('-m', '--mixed', 
                         help='混合配置文件路径（同时包含设备和命令信息）')
+    parser.add_argument('-o', '--output', 
+                        help='巡检报告输出文件路径')
     
     # 解析命令行参数
     args = parser.parse_args()
@@ -347,7 +353,10 @@ def main():
     results = inspector.run_inspection()
     
     # 保存结果（只保存TXT文本，不生成HTML报告）
-    inspector.save_results(results)
+    if args.output:
+        inspector.save_results(results, args.output)
+    else:
+        inspector.save_results(results)
 
 
 if __name__ == '__main__':
