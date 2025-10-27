@@ -8,23 +8,99 @@
 
 import json
 import argparse
+import os
 from netmiko import ConnectHandler
 from netmiko import NetMikoTimeoutException, NetMikoAuthenticationException
 
 
 class NetworkInspector:
-    def __init__(self, devices_file='devices.json', commands_file=None):
+    def __init__(self, devices_file='devices.json', commands_file=None, config_file=None):
         """
         初始化巡检工具
         
         Args:
             devices_file (str): 包含设备信息的JSON文件路径
             commands_file (str): 包含巡检命令的JSON文件路径（可选）
+            config_file (str): 包含设备信息的conf配置文件路径（可选）
         """
         self.devices_file = devices_file
         self.commands_file = commands_file
+        self.config_file = config_file
         self.commands = self._load_commands() if commands_file else {}
         self.devices = self._load_devices()
+    
+    def _load_conf_devices(self, conf_file=None):
+        """
+        从conf配置文件加载设备信息
+
+        Args:
+            conf_file (str): conf配置文件路径，如果为None则使用self.config_file
+
+        Returns:
+            list: 设备信息列表
+        """
+        conf_path = conf_file or self.config_file
+        devices = []
+        
+        try:
+            with open(conf_path, 'r', encoding='utf-8') as f:
+                lines = f.readlines()
+                
+            for line_num, line in enumerate(lines, 1):
+                # 跳过注释行和空行
+                line = line.strip()
+                if not line or line.startswith('#'):
+                    continue
+                
+                # 分割字段
+                parts = line.split()
+                if len(parts) < 6:  # 至少需要6个字段
+                    print(f"警告: 第{line_num}行格式不正确，跳过该行: {line}")
+                    continue
+                
+                # 解析基本字段
+                user = parts[0]
+                host = parts[1]
+                pass1 = parts[2]
+                pass2 = parts[3] if len(parts) > 3 and parts[3] != '""' else ""
+                device_type = parts[4] if len(parts) > 4 else "juniper"
+                
+                # 解析命令列表（从第5个字段开始到最后）
+                commands = []
+                if len(parts) > 5:
+                    # 处理用双引号包围的命令
+                    command_line = ' '.join(parts[5:])
+                    # 简单解析用双引号包围的命令
+                    import re
+                    commands = re.findall(r'"([^"]*)"', command_line)
+                    if not commands:
+                        # 如果没有找到用双引号包围的命令，则按空格分割
+                        commands = parts[5:]
+                
+                # 构建设备配置字典
+                device = {
+                    'host': host,
+                    'username': user,
+                    'password': pass1,
+                    'port': 22,  # 默认端口
+                    'device_type': device_type,
+                    'commands': commands
+                }
+                
+                # 如果有备用密码，添加到配置中
+                if pass2 and pass2 != '""':
+                    device['backup_password'] = pass2
+                
+                devices.append(device)
+                
+        except FileNotFoundError:
+            print(f"配置文件 {conf_path} 未找到，请检查文件路径。")
+            return []
+        except Exception as e:
+            print(f"解析配置文件 {conf_path} 时发生错误: {str(e)}")
+            return []
+            
+        return devices
     
     def _load_commands(self):
         """
@@ -45,11 +121,20 @@ class NetworkInspector:
     
     def _load_devices(self):
         """
-        从JSON文件加载设备信息
+        从配置文件加载设备信息
 
         Returns:
             list: 设备信息列表
         """
+        # 如果指定了config.conf文件
+        if self.config_file and os.path.exists(self.config_file):
+            return self._load_conf_devices()
+        
+        # 如果devices_file实际上是config.conf文件
+        if self.devices_file and self.devices_file.endswith('.conf') and os.path.exists(self.devices_file):
+            return self._load_conf_devices(self.devices_file)
+        
+        # 处理JSON格式文件
         try:
             with open(self.devices_file, 'r', encoding='utf-8') as f:
                 data = json.load(f)
@@ -325,6 +410,8 @@ def main():
                         help='巡检命令配置文件路径')
     parser.add_argument('-m', '--mixed', 
                         help='混合配置文件路径（同时包含设备和命令信息）')
+    parser.add_argument('--conf', 
+                        help='conf格式的设备配置文件路径')
     parser.add_argument('-o', '--output', 
                         help='巡检报告输出文件路径')
     
@@ -335,6 +422,9 @@ def main():
     if args.mixed:
         # 如果指定了混合配置文件，则使用它作为设备文件，不使用单独的命令文件
         inspector = NetworkInspector(devices_file=args.mixed)
+    elif args.conf:
+        # 如果指定了conf配置文件，则使用它
+        inspector = NetworkInspector(config_file=args.conf)
     elif args.devices:
         # 如果指定了设备配置文件，则使用它
         inspector = NetworkInspector(devices_file=args.devices, commands_file=args.commands)
